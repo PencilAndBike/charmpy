@@ -1,27 +1,37 @@
 language: cpp
 os: linux
 dist: trusty
+env:
+  - PYTHON_VER=2
+  - PYTHON_VER=3
+  - CPY_LAYER=ctypes
+  - CPY_LAYER=cffi
+  - CPY_LAYER=cython
+matrix:
+  exclude:
+  - env: CPY_LAYER=cython
+    env: PYTHON_VER=2
 before_install:
-  - sudo apt-get install python-dev
+  - [[ $PYTHON_VER -eq 2 ]] && sudo apt-get install python-dev
 #  - sudo apt-get install python-numpy
-  - sudo apt-get install python3-dev
-  - sudo apt-get install python3-pip
+  - [[ $PYTHON_VER -eq 3 ]] && sudo apt-get install python3-dev
+  - [[ $PYTHON_VER -eq 3 ]] && sudo apt-get install python3-pip
 #  - sudo apt-get install python3-numpy
 install:
-  - pip install --user cffi > /dev/null
-  - pip install --user numpy > /dev/null
-  - pip3 install --user cffi > /dev/null
-  - pip3 install --user numpy > /dev/null
-  - pip3 install --user cython > /dev/null
+  - [[ ($CPY_LAYER -eq "cffi") && ($PYTHON_VER -eq 2)]] && pip install --user cffi > /dev/null
+  - [[ $PYTHON_VER -eq 2 ]] && pip install --user numpy > /dev/null
+  - [[ ($CPY_LAYER -eq "cffi") && ($PYTHON_VER -eq 3)]] && pip3 install --user cffi > /dev/null
+  - [[ $PYTHON_VER -eq 3 ]] && pip3 install --user numpy > /dev/null
+  - [[ ($CPY_LAYER -eq "cython") && ($PYTHON_VER -eq 3)]] && pip3 install --user cython > /dev/null
 script:
   - git clone https://github.com/UIUC-PPL/charm
   - cd charm
   - ./build charmpy netlrts-linux-x86_64 tcp -j2 --with-production --enable-error-checking > /dev/null
   - cd ..
   - cp charm/bin/charmrun charmrun
-  - python3 setup.py `pwd`/charm --with-cython
-  - python3 setup.py `pwd`/charm --with-cffi
-  - python2 setup.py `pwd`/charm --with-cffi
+  - [[ ($CPY_LAYER -eq "cython") && ($PYTHON_VER -eq 3)]] && python3 setup.py `pwd`/charm --with-cython
+  - [[ ($CPY_LAYER -eq "cffi") && ($PYTHON_VER -eq 3)]] && python3 setup.py `pwd`/charm --with-cffi
+  - [[ ($CPY_LAYER -eq "cffi") && ($PYTHON_VER -eq 2)]] && python2 setup.py `pwd`/charm --with-cffi
   - export LD_LIBRARY_PATH=`pwd`/charm/lib
   - export PYTHONPATH=`pwd`/charmpy
   - export CHARMPY_TEST_NUM_PROCESSES=2

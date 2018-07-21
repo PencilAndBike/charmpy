@@ -14,7 +14,7 @@ if len(sys.argv) == 2 and sys.argv[1] == '-version_check':
     exit(sys.version_info[0])
 
 
-def searchForPython(python_implementations):
+def searchForPython(python_implementations, requested={2,3}):
     py2_exec, py3_exec = None, None
     py2_exec = shutil.which('python2')
     if py2_exec is None:
@@ -27,13 +27,13 @@ def searchForPython(python_implementations):
                 py3_exec = exec_str
     if py2_exec is None:
         print("WARNING: Python 2 executable not found for auto_test. If desired, set manually")
-    else:
+    elif 2 in requested:
         python_implementations.add((2, py2_exec))
     if py3_exec is None:
         py3_exec = shutil.which('python3')
     if py3_exec is None:
         print("WARNING: Python 3 executable not found for auto_test. If desired, set manually")
-    else:
+    elif 3 in requested:
         python_implementations.add((3, py3_exec))
 
 
@@ -52,15 +52,22 @@ except:
 
 # search for python executables
 python_implementations = set()   # python implementations can also be added here manually
-searchForPython(python_implementations)
+test_py_versions = {2,3}
+if 'PYTHON_VER' in os.environ:
+    test_py_versions = {int(os.environ['PYTHON_VER'])}
+searchForPython(python_implementations, test_py_versions)
 
 interfaces = ['ctypes', 'cffi', 'cython']
+if 'CPY_LAYER' in os.environ:
+    interfaces = [os.environ['CPY_LAYER']]
 supported_py_versions = {'ctypes': {2, 3},
                          'cffi'  : {2, 3},
                          'cython': {3} }
 
 with open('test_config.json', 'r') as infile:
     tests = json.load(infile)
+
+print("Running auto_test for Python versions", [p[0] for p in python_implementations], "interfaces=", interfaces)
 
 num_tests = 0
 durations = defaultdict(dict)
